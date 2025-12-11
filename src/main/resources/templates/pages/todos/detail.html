@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/base}"
+  lang="id"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spring Boot Todolist</title>
+  </head>
+  <body>
+    <div layout:fragment="content" class="mt-3">
+      <div class="card">
+        <div class="card-header d-flex bg-light sticky-top">
+          <div class="flex-fill">
+            <a th:href="@{/}" class="text-decoration-none">
+              <small class="text-muted"> &lt; Kembali </small>
+            </a>
+            <h3>
+              [[${todo.title}]]
+              <span th:if="${todo.finished}" class="badge bg-success">
+                Selesai
+              </span>
+              <span th:unless="${todo.finished}" class="badge bg-danger">
+                Belum selesai
+              </span>
+            </h3>
+          </div>
+          <div>
+            <div>
+              <a th:href="@{/auth/logout}" class="btn btn-sm btn-danger w-100"
+                >Keluar</a
+              >
+            </div>
+            <div>
+              <button
+                class="btn btn-sm btn-warning"
+                data-bs-target="#editCoverTodoModal"
+                data-bs-toggle="modal"
+              >
+                Ubah Cover
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-body">
+            <div th:if="${todo.cover}">
+              <img
+                th:src="@{'/todos/cover/' + ${todo.cover}}"
+                alt="Cover"
+                style="max-width: 100%"
+              />
+            </div>
+            <div th:unless="${todo.cover}">
+              <span class="text-muted">Belum ada cover!</span>
+            </div>
+            <hr />
+            <p style="font-size: 18px" th:text="${todo.description}"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modals -->
+      <div th:replace="~{models/todos/edit-cover :: editCoverTodoModal}"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script layout:fragment="others-js">
+      document.addEventListener("DOMContentLoaded", function () {
+        /* Cek apakah modal add perlu dibuka otomatis */
+        var editCoverTodoModalOpen = "[[${editCoverTodoModalOpen}]]" === "true";
+        if (editCoverTodoModalOpen) {
+          var addModal = new bootstrap.Modal(
+            document.getElementById("editCoverTodoModal")
+          );
+          addModal.show();
+        }
+      });
+    </script>
+  </body>
+</html>
