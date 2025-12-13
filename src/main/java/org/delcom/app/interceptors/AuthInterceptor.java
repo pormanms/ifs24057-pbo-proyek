@@ -1,10 +1,10 @@
 package org.delcom.app.interceptors;
 
 import org.delcom.app.configs.AuthContext;
-import org.delcom.app.entities.AuthToken;
-import org.delcom.app.entities.User;
-import org.delcom.app.services.AuthTokenService;
-import org.delcom.app.services.UserService;
+import org.delcom.app.modules.authentication.AuthToken;
+import org.delcom.app.modules.authentication.AuthTokenService;
+import org.delcom.app.modules.authentication.User;
+import org.delcom.app.modules.authentication.AccountService;
 import org.delcom.app.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     protected AuthTokenService authTokenService;
 
     @Autowired
-    protected UserService userService;
+    protected AccountService userService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)

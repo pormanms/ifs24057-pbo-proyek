@@ -1,56 +1,64 @@
 package org.delcom.app.services;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.delcom.app.modules.authentication.AuthToken;
+import org.delcom.app.modules.authentication.AuthTokenRepository;
+import org.delcom.app.modules.authentication.AuthTokenService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
 
-import org.delcom.app.entities.AuthToken;
-import org.delcom.app.repositories.AuthTokenRepository;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class AuthTokenServiceTests {
+@ExtendWith(MockitoExtension.class)
+class AuthTokenServiceTests {
+
+    @Mock
+    private AuthTokenRepository authTokenRepository;
+
+    @InjectMocks
+    private AuthTokenService authTokenService;
+
     @Test
-    @DisplayName("Berbagai pengujian AuthToken")
-    public void testVariousAuthToken() {
+    @DisplayName("Find User Token")
+    void findUserToken() {
         UUID userId = UUID.randomUUID();
-        AuthToken authToken = new AuthToken(userId, "token");
+        String token = "abc-123";
+        AuthToken mockToken = new AuthToken(userId, token);
 
-        // Membuat user repository palsu
-        AuthTokenRepository authTokenRepository = Mockito.mock(AuthTokenRepository.class);
+        when(authTokenRepository.findUserToken(userId, token)).thenReturn(mockToken);
 
-        // Membuat instance AuthToken dengan repository palsu
-        AuthTokenService authTokenService = new AuthTokenService(authTokenRepository);
-        assertTrue(authTokenService != null);
+        AuthToken result = authTokenService.findUserToken(userId, token);
 
-        // Menguji createAuthToken
-        {
-            Mockito.when(authTokenRepository.save(Mockito.any(AuthToken.class))).thenReturn(authToken);
+        assertNotNull(result);
+        assertEquals(token, result.getToken());
+    }
 
-            AuthToken result = authTokenService.createAuthToken(authToken);
-            assertTrue(result != null);
-            assertEquals(authToken.getUserId(), result.getUserId());
-            assertEquals(authToken.getToken(), result.getToken());
-        }
+    @Test
+    @DisplayName("Create Auth Token")
+    void createAuthToken() {
+        AuthToken input = new AuthToken(UUID.randomUUID(), "token");
+        when(authTokenRepository.save(input)).thenReturn(input);
 
-        // Menguji findUserToken
-        {
-            Mockito.when(authTokenRepository.findUserToken(userId, "token")).thenReturn(authToken);
+        AuthToken result = authTokenService.createAuthToken(input);
 
-            AuthToken result = authTokenService.findUserToken(userId, "token");
-            assertTrue(result != null);
-            assertEquals(authToken.getUserId(), result.getUserId());
-            assertEquals(authToken.getToken(), result.getToken());
-        }
+        assertNotNull(result);
+    }
 
-        // Menguji deleteAuthToken
-        {
-            Mockito.doNothing().when(authTokenRepository).deleteByUserId(userId);
+    @Test
+    @DisplayName("Delete Auth Token")
+    void deleteAuthToken() {
+        UUID userId = UUID.randomUUID();
+        
+        authTokenService.deleteAuthToken(userId);
 
-            authTokenService.deleteAuthToken(userId);
-            Mockito.verify(authTokenRepository, Mockito.times(1)).deleteByUserId(userId);
-        }
+        verify(authTokenRepository).deleteByUserId(userId);
     }
 }

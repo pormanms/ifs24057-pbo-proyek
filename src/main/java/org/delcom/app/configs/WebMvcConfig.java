@@ -19,4 +19,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/auth/**") // Kecuali endpoint auth
                 .excludePathPatterns("/api/public/**"); // Dan endpoint public
     }
+
+    @Override
+public void addResourceHandlers(org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+    // Membuka akses folder uploads ke browser
+    registry.addResourceHandler("/uploads/**")
+            .addResourceLocations("file:./uploads/");
+}
 }

@@ -10,10 +10,10 @@ import java.util.Date;
 import java.util.UUID;
 
 import org.delcom.app.configs.AuthContext;
-import org.delcom.app.entities.AuthToken;
-import org.delcom.app.entities.User;
-import org.delcom.app.services.AuthTokenService;
-import org.delcom.app.services.UserService;
+import org.delcom.app.modules.authentication.AuthToken;
+import org.delcom.app.modules.authentication.AuthTokenService;
+import org.delcom.app.modules.authentication.User;
+import org.delcom.app.modules.authentication.AccountService;
 import org.delcom.app.utils.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ public class AuthInterceptorTests {
         AuthTokenService authTokenService = Mockito.mock(AuthTokenService.class);
 
         // Mock UserService
-        UserService userService = Mockito.mock(UserService.class);
+        AccountService userService = Mockito.mock(AccountService.class);
 
         // Mock HttpServletRequest
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);

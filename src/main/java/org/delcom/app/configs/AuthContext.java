@@ -1,6 +1,6 @@
 package org.delcom.app.configs;
 
-import org.delcom.app.entities.User;
+import org.delcom.app.modules.authentication.User;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
