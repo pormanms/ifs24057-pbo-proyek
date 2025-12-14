@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}"></title>
+    <!-- Asumsikan Anda memiliki CSS/Bootstrap yang sama dengan template Todo -->
+    <style>
+        /* Gaya Sederhana untuk contoh */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
+        .btn-primary { background-color: #007bff; color: white; padding: 8px 15px; border: none; cursor: pointer; text-decoration: none; }
+    </style>
+</head>
+<body>
+    
+    <div class="header">
+        <!-- Ambil dari model, ganti dengan data autentikasi sesungguhnya -->
+        <h1 th:text="|Hay, ${username}|">Hay, Porman Marsaulina</h1>
+        <a href="/logout" class="btn-primary" style="background-color: red;">Keluar</a>
+    </div>
+
+    <div style="padding: 20px;">
+        <h2 th:text="${pageTitle}">Daftar Produk Marketplace Sederhana</h2>
+        <a href="/products/add" class="btn-primary">Tambah Produk Baru</a>
+        
+        <br><br>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Produk</th>
+                    <th>Kategori</th>
+                    <th>Harga</th>
+                    <th>Stok</th>
+                    <th>Dibuat pada</th>
+                    <th>Tindakan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Pengecekan data kosong -->
+                <tr th:if="${products.empty}">
+                    <td colspan="7">Belum ada data produk yang tersedia.</td>
+                </tr>
+                
+                <!-- Loop Tampilkan Daftar Data (Fitur 6) -->
+                <tr th:each="product, i : ${products}">
+                    <td th:text="${i.index + 1}">1</td>
+                    <td th:text="${product.name}">Nama Produk X</td>
+                    <td th:text="${product.category}">Elektronik</td>
+                    <td th:text="${#numbers.formatCurrency(product.price)}">Rp 100.000</td>
+                    <td th:text="${product.stockQuantity}">10</td>
+                    <td th:text="${#temporals.format(product.createdAt, 'dd-MM-yyyy HH:mm')}">20-11-2025</td>
+                    <td>
+                        <!-- Tautan Detail Data (Fitur 7) -->
+                        <a th:href="@{/products/{id}(id=${product.id})}">Detail</a> |
+                        
+                        <!-- Tautan Ubah Data (Fitur 3 & 4) -->
+                        <a th:href="@{/products/edit/{id}(id=${product.id})}">Ubah</a> |
+                        
+                        <!-- Form Hapus Data (Fitur 5) -->
+                        <form th:action="@{/api/products/{id}(id=${product.id})}" method="post" style="display:inline;">
+                            <input type="hidden" name="_method" value="delete" />
+                            <button type="submit" onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini?')" style="border:none; background:none; color: red; cursor: pointer;">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
