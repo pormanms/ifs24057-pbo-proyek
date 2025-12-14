@@ -1,8 +1,5 @@
 package org.delcom.app.modules.authentication;
 
-import org.delcom.app.modules.authentication.User;
-import org.delcom.app.modules.authentication.UserRepository;
-import org.delcom.app.modules.authentication.AccountService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +29,7 @@ class AccountServiceTests {
 
     @BeforeEach
     void setUp() {
+        // Inisialisasi data dummy
         userId = UUID.randomUUID();
         sampleUser = new User("Budi", "budi@mail.com", "pass");
         sampleUser.setId(userId);
@@ -40,6 +38,7 @@ class AccountServiceTests {
     @Test
     @DisplayName("Create User: Success")
     void createUser() {
+        // Menggunakan any() tanpa .class seringkali mengurangi warning generics di beberapa IDE
         when(userRepository.save(any(User.class))).thenReturn(sampleUser);
         
         User result = userService.createUser("Budi", "budi@mail.com", "pass");
@@ -54,6 +53,7 @@ class AccountServiceTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         User result = userService.getUserById(userId);
         assertNotNull(result);
+        assertEquals(userId, result.getId());
     }
 
     @Test
@@ -70,9 +70,8 @@ class AccountServiceTests {
         when(userRepository.findFirstByEmail("budi@mail.com")).thenReturn(Optional.of(sampleUser));
         User result = userService.getUserByEmail("budi@mail.com");
         assertNotNull(result);
+        assertEquals("budi@mail.com", result.getEmail());
     }
-
-    // === TEST CABANG UPDATE (Penting untuk Coverage) ===
 
     @Test
     @DisplayName("Update User: Success")
@@ -83,19 +82,19 @@ class AccountServiceTests {
         User result = userService.updateUser(userId, "Budi Baru", "baru@mail.com");
 
         assertNotNull(result);
-        assertEquals("Budi Baru", sampleUser.getName()); // Pastikan object berubah
+        assertEquals("Budi Baru", sampleUser.getName()); 
         assertEquals("baru@mail.com", sampleUser.getEmail());
     }
 
     @Test
-    @DisplayName("Update User: Not Found (Branch Coverage)")
+    @DisplayName("Update User: Not Found")
     void updateUser_NotFound() {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         User result = userService.updateUser(userId, "Nama", "Email");
 
-        assertNull(result); // Harus null
-        verify(userRepository, never()).save(any()); // Save tidak boleh dipanggil
+        assertNull(result); 
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -111,7 +110,7 @@ class AccountServiceTests {
     }
 
     @Test
-    @DisplayName("Update Password: Not Found (Branch Coverage)")
+    @DisplayName("Update Password: Not Found")
     void updatePassword_NotFound() {
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 

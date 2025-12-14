@@ -1,68 +1,78 @@
 package org.delcom.app.configs;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
-import org.springframework.boot.webmvc.error.ErrorAttributes;
+import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CustomErrorControllerTest {
+class CustomErrorControllerTests {
 
     @Mock
     private ErrorAttributes errorAttributes;
 
     @Mock
-    private ServletWebRequest webRequest;
+    private HttpServletRequest request;
 
-    @InjectMocks
-    private CustomErrorController errorController;
+    private CustomErrorController customErrorController;
 
-    @Test
-    void handleError_Status500_ReturnsErrorLabel() {
-        // Percabangan: status == 500 -> "error"
-        Map<String, Object> mockAttributes = Map.of(
-            "status", 500,
-            "error", "Internal Server Error",
-            "path", "/api/broken"
-        );
-
-        when(errorAttributes.getErrorAttributes(any(ServletWebRequest.class), any(ErrorAttributeOptions.class)))
-                .thenReturn(mockAttributes);
-
-        ResponseEntity<Map<String, Object>> response = errorController.handleError(webRequest);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals("error", response.getBody().get("status")); // Validasi logika "error"
+    @BeforeEach
+    void setUp() {
+        customErrorController = new CustomErrorController(errorAttributes);
     }
 
     @Test
-    void handleError_Status404_ReturnsFailLabel() {
-        // Percabangan: status != 500 (contoh: 404) -> "fail"
-        Map<String, Object> mockAttributes = Map.of(
-            "status", 404,
-            "error", "Not Found",
-            "path", "/api/missing"
+    void handleError_ReturnsInternalServerError_WhenStatusIs500() {
+        // Setup mock attributes
+        Map<String, Object> attributes = Map.of(
+                "status", 500,
+                "error", "Internal Server Error",
+                "path", "/test"
+        );
+        
+        // Mock behavior ErrorAttributes
+        // Perhatikan: Kita menggunakan any(WebRequest.class) agar fleksibel
+        when(errorAttributes.getErrorAttributes(any(WebRequest.class), any(ErrorAttributeOptions.class)))
+                .thenReturn(attributes);
+
+        // Action: Panggil method dengan request biasa (HttpServletRequest)
+        // KITA TIDAK LAGI MEMBUNGKUS DENGAN new ServletWebRequest(request) DI SINI
+        // KARENA DI CONTROLLER SUDAH DIBUNGKUS SECARA INTERNAL
+        ResponseEntity<Map<String, Object>> response = customErrorController.handleError(request);
+
+        // Assert
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("error", response.getBody().get("status"));
+    }
+
+    @Test
+    void handleError_ReturnsFail_WhenStatusIs400() {
+        Map<String, Object> attributes = Map.of(
+                "status", 400,
+                "error", "Bad Request",
+                "path", "/test"
         );
 
-        when(errorAttributes.getErrorAttributes(any(ServletWebRequest.class), any(ErrorAttributeOptions.class)))
-                .thenReturn(mockAttributes);
+        when(errorAttributes.getErrorAttributes(any(WebRequest.class), any(ErrorAttributeOptions.class)))
+                .thenReturn(attributes);
 
-        ResponseEntity<Map<String, Object>> response = errorController.handleError(webRequest);
+        ResponseEntity<Map<String, Object>> response = customErrorController.handleError(request);
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals("fail", response.getBody().get("status")); // Validasi logika "fail"
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("fail", response.getBody().get("status"));
     }
 }

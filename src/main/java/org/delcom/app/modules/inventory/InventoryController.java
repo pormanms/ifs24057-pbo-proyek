@@ -23,7 +23,8 @@ public class InventoryController {
     private final FileStorageService fileStorageService;
     private final AccountService userService;
 
-    public InventoryController(ItemService productService, FileStorageService fileStorageService, AccountService userService) {
+    public InventoryController(ItemService productService, FileStorageService fileStorageService,
+            AccountService userService) {
         this.productService = productService;
         this.fileStorageService = fileStorageService;
         this.userService = userService;
@@ -34,6 +35,9 @@ public class InventoryController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             User principal = (User) auth.getPrincipal();
+            if (principal.getId() == null) {
+                return null;
+            }
             return userService.getUserById(principal.getId());
         }
         return null;
@@ -43,7 +47,8 @@ public class InventoryController {
     @GetMapping
     public String listProducts(Model model) {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         model.addAttribute("products", productService.getAllProducts(user.getId()));
         return "pages/products/list";
@@ -53,7 +58,8 @@ public class InventoryController {
     @GetMapping("/create")
     public String createForm(Model model) {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         model.addAttribute("productForm", new ItemData());
         return "pages/products/form";
@@ -61,11 +67,11 @@ public class InventoryController {
 
     // 3. ACTION SIMPAN (CREATE)
     @PostMapping("/save")
-    public String saveProduct(@Valid @ModelAttribute ItemData form,
-                              BindingResult result,
-                              RedirectAttributes redirectAttributes) throws IOException {
+    public String saveProduct(@Valid @ModelAttribute ItemData form, BindingResult result,
+            RedirectAttributes redirectAttributes) throws IOException {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         if (result.hasErrors()) {
             return "pages/products/form";
@@ -82,11 +88,13 @@ public class InventoryController {
         // Simpan dulu untuk dapat ID
         product = productService.saveProduct(product);
 
-        // Upload Gambar jika ada
-        if (form.getImageFile() != null && !form.getImageFile().isEmpty()) {
-            String filename = fileStorageService.storeFile(form.getImageFile(), product.getId());
-            product.setImage(filename);
-            productService.saveProduct(product);
+        // Upload Gambar jika ada (pastikan product tidak null dan memiliki ID)
+        if (product != null && product.getId() != null) {
+            if (form.getImageFile() != null && !form.getImageFile().isEmpty()) {
+                String filename = fileStorageService.storeFile(form.getImageFile(), product.getId());
+                product.setImage(filename);
+                productService.saveProduct(product);
+            }
         }
 
         redirectAttributes.addFlashAttribute("success", "Produk berhasil ditambahkan!");
@@ -97,10 +105,12 @@ public class InventoryController {
     @GetMapping("/detail/{id}")
     public String detailProduct(@PathVariable UUID id, Model model) {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         Item product = productService.getProductById(id, user.getId());
-        if (product == null) return "redirect:/products";
+        if (product == null)
+            return "redirect:/products";
 
         model.addAttribute("product", product);
         return "pages/products/detail";
@@ -110,10 +120,12 @@ public class InventoryController {
     @GetMapping("/edit/{id}")
     public String editForm(@PathVariable UUID id, Model model) {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         Item product = productService.getProductById(id, user.getId());
-        if (product == null) return "redirect:/products";
+        if (product == null)
+            return "redirect:/products";
 
         // Mapping Entity ke DTO (Form)
         ItemData form = new ItemData();
@@ -131,12 +143,11 @@ public class InventoryController {
 
     // 6. ACTION UPDATE
     @PostMapping("/update/{id}")
-    public String updateProduct(@PathVariable UUID id, 
-                                @Valid @ModelAttribute ItemData form, 
-                                BindingResult result, 
-                                RedirectAttributes redirectAttributes) throws IOException {
+    public String updateProduct(@PathVariable UUID id, @Valid @ModelAttribute ItemData form, BindingResult result,
+            RedirectAttributes redirectAttributes) throws IOException {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         if (result.hasErrors()) {
             // Jika error, kembalikan productId agar form tetap dalam mode Edit
@@ -174,7 +185,8 @@ public class InventoryController {
     @PostMapping("/delete/{id}")
     public String deleteProduct(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
 
         Item p = productService.getProductById(id, user.getId());
         if (p != null) {
@@ -200,7 +212,8 @@ public class InventoryController {
     @GetMapping("/chart")
     public String chartPage() {
         User user = getAuthenticatedUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
         return "pages/products/chart";
     }
 
@@ -209,7 +222,8 @@ public class InventoryController {
     @ResponseBody
     public java.util.List<Object[]> getChartData() {
         User user = getAuthenticatedUser();
-        if (user == null) return null;
+        if (user == null)
+            return null;
         return productService.getChartData(user.getId());
     }
 }

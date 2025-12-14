@@ -37,8 +37,13 @@ public class HomeView {
             // Casting langsung dari sesi
             user = (User) auth.getPrincipal();
 
-            // Refresh data user dari DB untuk memastikan data terbaru
-            user = userService.getUserById(user.getId());
+            // Jika id pada principal null, jangan panggil service
+            if (user.getId() != null) {
+                // Refresh data user dari DB untuk memastikan data terbaru
+                user = userService.getUserById(user.getId());
+            } else {
+                user = null;
+            }
         }
 
         // Kirim object user ke template (bisa null jika belum login)
@@ -57,18 +62,14 @@ public class HomeView {
             int totalProducts = products.size();
 
             // Menghitung jumlah kategori unik
-            long totalCategories = products.stream()
-                    .map(Item::getCategory)
-                    .filter(Objects::nonNull) // Hindari null category
-                    .distinct()
-                    .count();
+            long totalCategories = products.stream().map(Item::getCategory).filter(Objects::nonNull) // Hindari null
+                                                                                                     // category
+                    .distinct().count();
 
             // Menghitung Total Nilai Aset (Harga * Stok)
             // Menggunakan Double karena di Entity Product kita pakai Double & Integer
-            Double totalAssetValue = products.stream()
-                    .filter(p -> p.getPrice() != null && p.getStock() != null)
-                    .mapToDouble(p -> p.getPrice() * p.getStock())
-                    .sum();
+            Double totalAssetValue = products.stream().filter(p -> p.getPrice() != null && p.getStock() != null)
+                    .mapToDouble(p -> p.getPrice() * p.getStock()).sum();
 
             // 4. Masukkan ke Model
             model.addAttribute("totalProducts", totalProducts);

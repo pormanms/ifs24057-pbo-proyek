@@ -1,35 +1,42 @@
 package org.delcom.app.interceptors;
 
 import org.delcom.app.configs.AuthContext;
+import org.delcom.app.modules.authentication.AccountService;
 import org.delcom.app.modules.authentication.AuthToken;
 import org.delcom.app.modules.authentication.AuthTokenService;
 import org.delcom.app.modules.authentication.User;
-import org.delcom.app.modules.authentication.AccountService;
 import org.delcom.app.utils.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull; // 1. Import NonNull
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
-    @Autowired
     protected AuthContext authContext;
-
-    @Autowired
     protected AuthTokenService authTokenService;
-
-    @Autowired
     protected AccountService userService;
 
+    // Constructor Injection tidak memerlukan @Autowired
+    public AuthInterceptor(AuthContext authContext, AuthTokenService authTokenService, AccountService userService) {
+        this.authContext = authContext;
+        this.authTokenService = authTokenService;
+        this.userService = userService;
+    }
+
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-            throws Exception {
+    public boolean preHandle(
+            @NonNull HttpServletRequest request,   // 2. Tambah @NonNull
+            @NonNull HttpServletResponse response,  // 2. Tambah @NonNull
+            @NonNull Object handler                 // 2. Tambah @NonNull
+    ) throws Exception {
+        
         // Skip auth untuk endpoint public
         if (isPublicEndpoint(request)) {
             return true;
@@ -86,13 +93,14 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private boolean isPublicEndpoint(HttpServletRequest request) {
         String path = request.getRequestURI();
-        // String method = request.getMethod();
+        // 3. Menghapus commented code (dead code) sesuai saran SonarLint
 
         // Endpoint public yang tidak perlu auth
         return path.startsWith("/api/auth") || path.equals("/error");
     }
 
-    private void sendErrorResponse(HttpServletResponse response, int status, String message) throws Exception {
+    // 4. Ubah Exception menjadi IOException agar lebih spesifik
+    private void sendErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
         response.setStatus(status);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

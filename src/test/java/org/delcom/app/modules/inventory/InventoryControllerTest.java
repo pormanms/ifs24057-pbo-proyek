@@ -1,10 +1,6 @@
 package org.delcom.app.modules.inventory;
 
 import org.delcom.app.modules.authentication.User;
-import org.delcom.app.modules.inventory.ItemService;
-import org.delcom.app.modules.inventory.Item;
-import org.delcom.app.modules.inventory.InventoryController;
-import org.delcom.app.modules.inventory.ItemData;
 import org.delcom.app.modules.authentication.AccountService;
 import org.delcom.app.services.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,19 +71,12 @@ class InventoryControllerTest {
 
     @Test
     void listProducts_AuthExistsButPrincipalWrongType_RedirectsLogin() {
-        // 1. Set Context agar auth != null
         SecurityContextHolder.setContext(securityContext);
         when(securityContext.getAuthentication()).thenReturn(authentication);
-
-        // 2. TAPI, set Principal sebagai String (misal: "anonymousUser"), BUKAN Entity
-        // User kita
-        // Ini akan membuat kondisi (auth.getPrincipal() instanceof User) menjadi FALSE
         when(authentication.getPrincipal()).thenReturn("anonymousUser");
 
-        // 3. Panggil method controller
         String view = productController.listProducts(model);
 
-        // 4. Harapannya dianggap user == null, jadi redirect ke login
         assertEquals("redirect:/auth/login", view);
     }
 
@@ -177,27 +166,18 @@ class InventoryControllerTest {
         when(bindingResult.hasErrors()).thenReturn(false);
 
         ItemData form = new ItemData();
-
-        // MOCK FILE: Tidak Null, TAPI isEmpty() return true
         MultipartFile mockFile = mock(MultipartFile.class);
         when(mockFile.isEmpty()).thenReturn(true);
-
-        form.setImageFile(mockFile); // Kondisi: Not Null && Empty
+        form.setImageFile(mockFile); 
 
         Item savedProduct = new Item();
         savedProduct.setId(UUID.randomUUID());
 
-        // Mock save pertama (pembuatan ID)
         when(productService.saveProduct(any(Item.class))).thenReturn(savedProduct);
 
         String view = productController.saveProduct(form, bindingResult, redirectAttributes);
 
-        // Assert:
-        // Pastikan storeFile TIDAK dipanggil karena file kosong
         verify(fileStorageService, never()).storeFile(any(), any());
-
-        // Pastikan saveProduct hanya dipanggil 1x (save awal),
-        // tidak ada save kedua (update image)
         verify(productService, times(1)).saveProduct(any(Item.class));
 
         assertEquals("redirect:/products", view);
@@ -223,27 +203,18 @@ class InventoryControllerTest {
     void detailProduct_ProductNotFound_RedirectsToProducts() {
         mockAuthenticatedUser(true);
         UUID pid = UUID.randomUUID();
-
-        // Mock service return NULL
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(null);
-
         String view = productController.detailProduct(pid, model);
-
         assertEquals("redirect:/products", view);
     }
 
-    // Skenario 2: Produk DITEMUKAN (product != null) -> False
     @Test
     void detailProduct_ProductFound_ReturnsView() {
         mockAuthenticatedUser(true);
         UUID pid = UUID.randomUUID();
         Item p = new Item();
-
-        // Mock service return OBJECT
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(p);
-
         String view = productController.detailProduct(pid, model);
-
         assertEquals("pages/products/detail", view);
         verify(model).addAttribute("product", p);
     }
@@ -260,38 +231,31 @@ class InventoryControllerTest {
     void editForm_ProductNotFound_RedirectsToProducts() {
         mockAuthenticatedUser(true);
         UUID pid = UUID.randomUUID();
-
-        // Mock service return NULL
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(null);
-
         String view = productController.editForm(pid, model);
-
         assertEquals("redirect:/products", view);
     }
 
-    // Skenario 2: Produk DITEMUKAN (product != null) -> False
     @Test
     void editForm_ProductFound_ReturnsForm() {
         mockAuthenticatedUser(true);
         UUID pid = UUID.randomUUID();
         Item p = new Item();
         p.setId(pid);
-        p.setName("Test Product"); // Set property biar mapping DTO aman
+        p.setName("Test Product");
         p.setCategory("General");
         p.setPrice(100.0);
         p.setStock(1);
 
-        // Mock service return OBJECT
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(p);
 
         String view = productController.editForm(pid, model);
 
         assertEquals("pages/products/form", view);
-        // Pastikan model attribute terset
         verify(model).addAttribute(eq("productForm"), any());
     }
 
-    // 6. ACTION UPDATE (BAGIAN YANG BANYAK MERAH)
+    // 6. ACTION UPDATE
     @Test
     void updateProduct_NotLoggedIn_RedirectsLogin() throws IOException {
         mockAuthenticatedUser(false);
@@ -300,25 +264,21 @@ class InventoryControllerTest {
         assertEquals("redirect:/auth/login", view);
     }
 
-    // FIX BARIS 146-147: Memastikan Flash Attribute dipanggil saat Error
     @Test
     void updateProduct_ValidationErrors_ReturnsEditForm_AndSetsFlashAttributes() throws IOException {
         mockAuthenticatedUser(true);
-        when(bindingResult.hasErrors()).thenReturn(true); // Trigger error
+        when(bindingResult.hasErrors()).thenReturn(true); 
         UUID pid = UUID.randomUUID();
 
         String view = productController.updateProduct(pid, new ItemData(), bindingResult, redirectAttributes);
 
-        // Verifikasi baris 146-147 terpanggil
-        verify(redirectAttributes).addFlashAttribute(eq("org.springframework.validation.BindingResult.productForm"),
-                eq(bindingResult));
+        // Perbaikan Warning SonarLint (Hapus eq() jika argumentnya exact value)
+        verify(redirectAttributes).addFlashAttribute("org.springframework.validation.BindingResult.productForm", bindingResult);
         verify(redirectAttributes).addFlashAttribute(eq("productForm"), any(ItemData.class));
 
         assertEquals("redirect:/products/edit/" + pid, view);
     }
 
-    // FIX BARIS 162-163 & 166: Memastikan deleteFile lama dan storeFile baru
-    // terpanggil
     @Test
     void updateProduct_WithNewImageAndExistingOldImage_ReplacesFile() throws IOException {
         mockAuthenticatedUser(true);
@@ -327,18 +287,17 @@ class InventoryControllerTest {
         UUID pid = UUID.randomUUID();
         Item existing = new Item();
         existing.setId(pid);
-        existing.setImage("old_image.jpg"); // PENTING: Set image lama agar tidak null
+        existing.setImage("old_image.jpg"); 
 
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(existing);
 
         ItemData form = new ItemData();
         MultipartFile newFile = mock(MultipartFile.class);
-        when(newFile.isEmpty()).thenReturn(false); // PENTING: File baru tidak boleh empty
+        when(newFile.isEmpty()).thenReturn(false); 
         form.setImageFile(newFile);
 
         String view = productController.updateProduct(pid, form, bindingResult, redirectAttributes);
 
-        // Verifikasi baris 162-163 (Delete) dan 166 (Store)
         verify(fileStorageService).deleteFile("old_image.jpg");
         verify(fileStorageService).storeFile(newFile, pid);
 
@@ -351,12 +310,10 @@ class InventoryControllerTest {
         when(bindingResult.hasErrors()).thenReturn(false);
 
         UUID pid = UUID.randomUUID();
-        // Mock service return NULL
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(null);
 
         String view = productController.updateProduct(pid, new ItemData(), bindingResult, redirectAttributes);
 
-        // Pastikan langsung redirect tanpa error, dan tidak memanggil save
         assertEquals("redirect:/products", view);
         verify(productService, never()).saveProduct(any());
     }
@@ -372,19 +329,16 @@ class InventoryControllerTest {
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(existing);
 
         ItemData form = new ItemData();
-        // Mock File: Object ada, tapi isEmpty() = true
         MultipartFile mockFile = mock(MultipartFile.class);
         when(mockFile.isEmpty()).thenReturn(true);
         form.setImageFile(mockFile);
 
         productController.updateProduct(pid, form, bindingResult, redirectAttributes);
 
-        // Pastikan tidak ada proses store file
         verify(fileStorageService, never()).storeFile(any(), any());
         verify(productService).saveProduct(existing);
     }
 
-    // Jadi logic deleteFile dilewati
     @Test
     void updateProduct_NewImage_ButNoOldImageToDelete_StoresNewOnly() throws IOException {
         mockAuthenticatedUser(true);
@@ -393,18 +347,17 @@ class InventoryControllerTest {
         UUID pid = UUID.randomUUID();
         Item existing = new Item();
         existing.setId(pid);
-        existing.setImage(null); // PENTING: Image lama NULL
+        existing.setImage(null);
 
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(existing);
 
         ItemData form = new ItemData();
         MultipartFile newFile = mock(MultipartFile.class);
-        when(newFile.isEmpty()).thenReturn(false); // File baru valid
+        when(newFile.isEmpty()).thenReturn(false);
         form.setImageFile(newFile);
 
         productController.updateProduct(pid, form, bindingResult, redirectAttributes);
 
-        // Verify: deleteFile TIDAK dipanggil (karena null), tapi storeFile DIPANGGIL
         verify(fileStorageService, never()).deleteFile(any());
         verify(fileStorageService).storeFile(newFile, pid);
     }
@@ -420,15 +373,12 @@ class InventoryControllerTest {
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(existing);
 
         ItemData form = new ItemData();
-        form.setImageFile(null); // KUNCI: Set Explicitly NULL
+        form.setImageFile(null);
 
         productController.updateProduct(pid, form, bindingResult, redirectAttributes);
 
-        // Verify: Tidak ada interaksi dengan FileStorage
         verify(fileStorageService, never()).storeFile(any(), any());
         verify(fileStorageService, never()).deleteFile(any());
-
-        // Tapi tetap save produk (update nama/harga/dll)
         verify(productService).saveProduct(existing);
     }
 
@@ -440,19 +390,17 @@ class InventoryControllerTest {
         assertEquals("redirect:/auth/login", view);
     }
 
-    // FIX BARIS 186: Memastikan deleteFile terpanggil saat hapus produk
     @Test
     void deleteProduct_WithImage_DeletesFileAndDb() {
         mockAuthenticatedUser(true);
         UUID pid = UUID.randomUUID();
         Item p = new Item();
-        p.setImage("gambar_exist.jpg"); // PENTING: Set image agar masuk blok if
+        p.setImage("gambar_exist.jpg");
 
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(p);
 
         String view = productController.deleteProduct(pid, redirectAttributes);
 
-        // Verifikasi baris 186 terpanggil
         verify(fileStorageService).deleteFile("gambar_exist.jpg");
         verify(productService).deleteProduct(pid);
         assertEquals("redirect:/products", view);
@@ -462,13 +410,10 @@ class InventoryControllerTest {
     void deleteProduct_ProductNotFound_DoesNothing() {
         mockAuthenticatedUser(true);
         UUID pid = UUID.randomUUID();
-
-        // MOCK: Product tidak ditemukan (NULL)
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(null);
 
         String view = productController.deleteProduct(pid, redirectAttributes);
 
-        // Verify: Tidak ada penghapusan DB maupun File
         verify(productService, never()).deleteProduct(any());
         verify(fileStorageService, never()).deleteFile(any());
 
@@ -481,13 +426,12 @@ class InventoryControllerTest {
         UUID pid = UUID.randomUUID();
         Item p = new Item();
         p.setId(pid);
-        p.setImage(null); // PENTING: Image diset NULL
+        p.setImage(null);
 
         when(productService.getProductById(pid, mockUser.getId())).thenReturn(p);
 
         String view = productController.deleteProduct(pid, redirectAttributes);
 
-        // Verify: Hapus DB dipanggil, TAPI Hapus File TIDAK dipanggil
         verify(productService).deleteProduct(pid);
         verify(fileStorageService, never()).deleteFile(any());
 
